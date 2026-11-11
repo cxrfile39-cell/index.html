@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>心臟 CT 互動學習：Pitch · 規格 · ECG Gating</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --ink:#1b2430; --muted:#667085; --line:#dde3ec;
+  --brand:#1f5fbf; --brand2:#e8f0fd; --good:#1a9a5b; --warn:#e08a00; --bad:#d33a3a;
+  --ecg-bg:#0b0f14; --ecg:#ffd84a;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#10151c;--card:#18202a;--ink:#e8edf4;--muted:#9aa7b8;--line:#2a3544;--brand:#6da2f5;--brand2:#1d2c44;}
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+header{padding:20px 16px 8px;max-width:1000px;margin:0 auto}
+h1{font-size:1.4rem;margin:0 0 4px}
+header p{margin:0;color:var(--muted);font-size:.9rem}
+nav{max-width:1000px;margin:12px auto 0;padding:0 16px;display:flex;gap:6px;flex-wrap:wrap}
+nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:10px;cursor:pointer;font-size:.92rem}
+nav button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+main{max-width:1000px;margin:12px auto 40px;padding:0 16px}
+section{display:none}
+section.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:1.05rem;margin:0 0 10px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:3px}
+input[type=number],select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:.95rem}
+input[type=range]{width:100%}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:.85rem}
+.pill:hover{border-color:var(--brand)}
+.pill.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.formula{background:#0f1720;color:#fff;border-radius:10px;padding:10px 14px;font-family:Georgia,"Times New Roman",serif;font-size:1rem;overflow-x:auto;margin:8px 0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
+.stat{background:var(--brand2);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-size:1.25rem}
+.stat span{font-size:.78rem;color:var(--muted)}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.8rem;color:#fff}
+.b-good{background:var(--good)}.b-warn{background:var(--warn)}.b-bad{background:var(--bad)}.b-brand{background:var(--brand)}
+.note{font-size:.82rem;color:var(--muted);margin-top:8px}
+svg{width:100%;height:auto;display:block}
+.ecgbox{background:var(--ecg-bg);border-radius:10px;padding:6px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid var(--line);padding:8px;text-align:center}
+th{background:var(--brand2)}
+td.hl,th.hl{outline:2px solid var(--brand);outline-offset:-2px}
+.track{position:relative;height:34px;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}
+.dot{position:absolute;top:4px;left:0;width:48px;height:24px;border-radius:6px;background:var(--brand);color:#fff;font-size:.7rem;display:flex;align-items:center;justify-content:center}
+.dot.slow{animation:mv 9s linear infinite}
+.dot.fast{animation:mv 3s linear infinite}
+.dot.stepgo{animation:mvstep 9s linear infinite}
+@keyframes mv{from{left:0}to{left:calc(100% - 48px)}}
+@keyframes mvstep{
+ 0%,12%{left:0}18%,30%{left:25%}36%,48%{left:50%}54%,66%{left:75%}72%,100%{left:calc(100% - 48px)}}
+.mode{cursor:pointer;transition:.15s}
+.mode.sel{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand) inset}
+.dose{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.dose i{display:block;height:100%}
+.result{border-left:4px solid var(--brand);background:var(--brand2);padding:10px 14px;border-radius:8px;margin-top:10px}
+.step{border-left:3px solid var(--brand);padding:6px 12px;margin:8px 0;background:var(--bg);border-radius:6px}
+.step .f{font-family:Georgia,"Times New Roman",serif;color:var(--muted);font-size:.85rem}
+.step .s{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86rem;overflow-x:auto}
+.step .r{font-weight:700;color:var(--brand)}
+sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
+.refs ol{padding-left:22px;margin:0}
+.refs li{margin-bottom:10px;font-size:.86rem}
+.refs a{color:var(--brand);word-break:break-all}
+.tree{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tcol{display:flex;flex-direction:column;gap:10px}
+.trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tn{padding:10px 14px;border-radius:8px;color:#fff;font-weight:600;text-align:center;font-size:.9rem}
+.tn.root{background:#ed7d31}
+.tn.mid{background:#ffc000;color:#222}
+.tn.leaf{background:#5b9bd5;cursor:pointer;max-width:260px}
+.tn.leaf.sel{outline:3px solid var(--ink);outline-offset:1px}
+.arr{color:var(--muted)}
+.tbl-note{font-size:.8rem;color:var(--bad);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>心臟 CT 互動學習</h1>
+  <p>Pitch · Z-axis Coverage · 掃描規格 · ECG Gating · CCTA 掃描模式</p>
+</header>
+<nav id="tabs">
+  <button data-t="t1" class="active">① Pitch 視覺化</button>
+  <button data-t="t2">② 規格與覆蓋範圍計算</button>
+  <button data-t="t3">③ ECG 與 R-R 視窗</button>
+  <button data-t="t4">④ CCTA 掃描協定</button>
+</nav>
+<main>
+
+<!-- ============ TAB 1 ============ -->
+<section id="t1" class="active">
+  <div class="card">
+    <h2>Pitch = Gantry move distance (per rotation) ÷ Total Collimation Width <sup class="cite">[1]</sup></h2>
+    <div class="grid g3">
+      <div><label>物理排數 (rows)</label><input type="number" id="p_n" value="64" min="1" step="1"></div>
+      <div><label>單排寬度 (mm)</label><input type="number" id="p_w" value="0.625" min="0.1" step="0.025"></div>
+      <div><label>Total Collimation Width (mm)</label><input type="number" id="p_coll" value="40" disabled></div>
+    </div>
+    <div style="margin-top:12px">
+      <label>Pitch：<b id="p_val">1.00</b></label>
+      <input type="range" id="p_slider" min="0.3" max="3.5" step="0.05" value="1">
+      <div class="row" style="margin-top:6px">
+        <button class="pill" data-p="0.5">Pitch 0.5</button>
+        <button class="pill" data-p="1">Pitch 1</button>
+        <button class="pill" data-p="2">Pitch 2</button>
+        <button class="pill" data-p="3.2">Turbo Flash 3.2</button>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="p_feed">40 mm</b><span>Gantry move distance / 每轉</span></div>
+      <div class="stat"><b id="p_state">—</b><span>資料狀態</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Z 軸掃描示意（連續 3 圈旋轉）</h2>
+    <svg id="p_svg" viewBox="0 0 700 250" role="img" aria-label="pitch visualization"></svg>
+    <div class="row" style="font-size:.8rem;color:var(--muted);gap:14px;margin-top:4px">
+      <span>▇ 偵檢器覆蓋範圍</span><span style="color:var(--bad)">▨ 間隙 (gap)</span><span style="color:var(--warn)">▇ 重疊 (overlap)</span>
+    </div>
+  </div>
+
+  <div class="card" id="p_explain"></div>
+  <div class="card"><h2>公式與計算過程 <sup class="cite">[1]</sup></h2><div id="p_calc"></div></div>
+</section>
+
+<!-- ============ TAB 2 ============ -->
+<section id="t2">
+  <div class="card">
+    <h2>參數輸入</h2>
+    <div class="row" style="margin-bottom:10px">
+      <button class="pill" id="pre_64">64 切範例 (40 mm)</button>
+      <button class="pill" id="pre_sie">Siemens Somatom Force (Turbo Flash)</button>
+    </div>
+    <div class="grid g3">
+      <div><label>Pitch</label><input type="number" id="s_p" value="3.2" step="0.05"></div>
+      <div><label>物理排數</label><input type="number" id="s_n" value="96" step="1"></div>
+      <div><label>單排寬度 (mm)</label><input type="number" id="s_w" value="0.6" step="0.025"></div>
+      <div><label>Rotation time (s)</label><input type="number" id="s_rot" value="0.25" step="0.01"></div>
+      <div><label>Scan time (s)</label><input type="number" id="s_scan" value="0.25" step="0.05"></div>
+      <div><label>X-ray 光源數</label><select id="s_k"><option value="1">1（單源）</option><option value="2" selected>2（雙源）</option></select></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>計算結果</h2>
+    <div class="stats">
+      <div class="stat"><b id="r_coll">—</b><span>Total Collimation Width<br>= 排數 × 單排寬度</span></div>
+      <div class="stat"><b id="r_feed">—</b><span>Gantry move distance<br>= Pitch × Collimation</span></div>
+      <div class="stat"><b id="r_speed">—</b><span>Scan speed (table speed)<br>= 每轉距離 ÷ rotation time</span></div>
+      <div class="stat"><b id="r_rots">—</b><span>Total rotation number<br>= Scan time ÷ Rotation time</span></div>
+      <div class="stat"><b id="r_cov">—</b><span>Z-axis Coverage</span></div>
+      <div class="stat"><b id="r_temp">—</b><span>Temporal resolution<br>= Rot time × ½ × (1/光源數)</span></div>
+    </div>
+    <div class="formula">Z-axis Coverage = Pitch × Total Collimation Width × Scan Time ÷ Rotation Time</div>
+    <div class="formula">Temporal resolution = (Rotation time) × (½ × 1/光源數)　→ 雙源 = Rotation time ÷ 4</div>
+    <div class="note" id="s_note"></div>
+  </div>
+
+  <div class="card"><h2>公式與逐步計算 <sup class="cite">[1][4]</sup></h2><div id="s_calc"></div></div>
+
+  <div class="card">
+    <h2>規格表對照（Siemens Somatom Force） <sup class="cite">[4]</sup></h2>
+    <table>
+      <tr><th>項目</th><th>規格表</th><th>推算</th></tr>
+      <tr><td>Number of acquired slices</td><td>384 (2×192)</td><td>—</td></tr>
+      <tr><td>Rotation time</td><td>up to 0.25 s</td><td>250 ms</td></tr>
+      <tr><td>Max. scan speed (Turbo Flash)</td><td>737 mm/s</td><td>3.2 × 57.6 mm ÷ 0.25 s ≈ 737 mm/s</td></tr>
+      <tr><td>單圈 Z-axis coverage</td><td>—</td><td>737 mm/s × 0.25 s ≈ 184 mm ≈ 18.4 cm</td></tr>
+      <tr><td>Temporal resolution</td><td>up to 66 ms</td><td>250 × ¼ = 62.5 ms（規格表 66 ms 含硬體運作延遲誤差）</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ TAB 3 ============ -->
+<section id="t3">
+  <div class="card">
+    <h2>Normal ECG trace（sinus rhythm） <sup class="cite">[2][3]</sup></h2>
+    <div class="grid g2">
+      <div>
+        <label>心率 HR：<b id="e_hr_v">60</b> bpm　→　R-R interval = <b id="e_rr_v">1000</b> ms</label>
+        <input type="range" id="e_hr" min="40" max="140" step="1" value="60">
+      </div>
+      <div>
+        <label>視窗定義方式</label>
+        <div class="row">
+          <button class="pill on" id="m_rel">Relative R-R (%)</button>
+          <button class="pill" id="m_abs">Absolute (ms)</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="rel_ctl" class="grid g2" style="margin-top:10px">
+      <div><label>視窗起點：<b id="e_s_v">40</b> %</label><input type="range" id="e_s" min="0" max="95" step="5" value="40"></div>
+      <div><label>視窗終點：<b id="e_e_v">80</b> %</label><input type="range" id="e_e" min="0" max="95" step="5" value="80"></div>
+    </div>
+    <div id="abs_ctl" class="grid g2" style="margin-top:10px;display:none">
+      <div><label>視窗起點（R 波後）：<b id="e_as_v">400</b> ms</label><input type="range" id="e_as" min="0" max="900" step="10" value="400"></div>
+      <div><label>視窗長度：<b id="e_al_v">400</b> ms</label><input type="range" id="e_al" min="50" max="600" step="10" value="400"></div>
+    </div>
+
+    <div class="ecgbox" style="margin-top:10px"><svg id="e_svg" viewBox="0 0 760 270" role="img" aria-label="ECG"></svg></div>
+
+    <div class="stats">
+      <div class="stat"><b id="e_win">—</b><span>重建視窗（絕對時間）</span></div>
+      <div class="stat"><b id="e_pct">—</b><span>視窗（相對 R-R %）</span></div>
+      <div class="stat"><b id="e_len">—</b><span>視窗長度</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>時間解析度 vs. 心跳</h2>
+    <div class="grid g2">
+      <div>
+        <label>掃描儀類型</label>
+        <select id="e_scan">
+          <option value="175">單源 · rotation 0.35 s → 175 ms</option>
+          <option value="125">單源 · rotation 0.25 s → 125 ms</option>
+          <option value="62.5" selected>雙源 · rotation 0.25 s → 62.5 ms</option>
+        </select>
+      </div>
+      <div class="stat"><b id="e_tr">—</b><span>占一個 R-R interval 的比例（越小代表在每次心跳中「凍結」心臟動作的能力越好）</span></div>
+    </div>
+    <div class="note">黃色 ECG 上的橘色小方塊＝視窗起點開始的一個「時間解析度」寬度。心率越快，R-R 越短，同樣的 temporal resolution 占比越大，運動假影風險越高。此為教學示意。</div>
+  </div>
+
+  <div class="card">
+    <h2>Relative (R-R%) vs Absolute (ms) 重建 <sup class="cite">[3][6]</sup></h2>
+    <div class="grid g2">
+      <div class="result" style="margin:0"><b>Relative（R-R%）</b><br>
+        適合 <b>慢且規則的心率</b>，用於 <b>舒張期重建 (diastolic reconstruction)</b>。<br>
+        <span style="color:var(--bad)"><b>HR ↑ → 舒張期時間 ↓</b></span></div>
+      <div class="result" style="margin:0"><b>Absolute（ms）</b><br>
+        每個心動週期都在<b>同一個時間點</b>重建（例：350 ms），<b>不受 HR 影響</b>；R-R% 則取決於 R-R 長度。<br>
+        適合 <b>收縮期重建</b> 與 <b>心律不整</b>。收縮期約落在 <b>35–50% R-R interval</b>；冠狀動脈各節段速度下降多發生在 280–340 ms（各血管不同，投影片原文）。</div>
+    </div>
+    <div class="row" style="margin:12px 0 4px">
+      <button class="pill" id="pre_dia">舒張期範例：Relative 70%</button>
+      <button class="pill" id="pre_sys_rel">收縮期範例：Relative 35–50%</button>
+      <button class="pill" id="pre_sys">收縮期範例：Absolute 350 ms</button>
+      <span class="note" style="margin:0">（按下後上方 ECG 視窗會同步設定）</span>
+    </div>
+    <div class="grid g2" style="margin-top:8px">
+      <div><label>Relative 位置：<b id="c_rel_v">70</b> % R-R</label><input type="range" id="c_rel" min="0" max="95" step="5" value="70"></div>
+      <div><label>Absolute 位置：<b id="c_abs_v">350</b> ms（自 R 波起算）</label><input type="range" id="c_abs" min="0" max="900" step="10" value="350"></div>
+    </div>
+    <svg id="c_svg" viewBox="0 0 760 250" role="img" aria-label="relative vs absolute"></svg>
+    <div class="row" style="font-size:.8rem;color:var(--muted);gap:14px">
+      <span style="color:#e08a00">▍Relative：時間點隨 HR 改變</span><span style="color:#1f7ae0">▍Absolute：時間點固定</span>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px"><table id="c_tbl"></table></div>
+    <div class="tbl-note">⚠ 投影片表格中「100 bpm 的 70% R-R interval ≈ 525 ms」與數學計算 70% × 600 ms = 420 ms 不一致（60 bpm 的 700 ms 則吻合）。表中「投影片」欄保留原數值，「計算」欄為純數學換算，建議回原始文獻確認該欄定義。</div>
+    <div id="c_calc" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <h2>依心率的最佳重建視窗起點 <sup class="cite">[6]</sup></h2>
+    <div class="note" style="margin:0 0 8px">Table 2：Beginning of the Optimal Systolic and Diastolic Reconstruction Windows at Different Heart Rates（起點為 median %，單位為 R-R interval 的 %）</div>
+    <div style="overflow-x:auto"><table id="o_tbl"></table></div>
+    <div class="result" id="o_cur"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="pill" id="ap_sys">套用收縮期起點到 ECG 視窗</button>
+      <button class="pill" id="ap_dia">套用舒張期起點到 ECG 視窗</button>
+    </div>
+    <div class="note">高心率時，最佳視窗會往各期的後段移動（表格原註）。表中心率區間在 60 / 70 / 80 bpm 有重疊，App 以 ≤60、≤70、≤80、&gt;80 對應。「套用」按鈕會把視窗設為 Relative：收縮期起點～+15%、舒張期起點～+10%（上限 95%），寬度為本 App 的示意設定，並非文獻數值。ECG 圖上的綠色虛線為目前心率對應的最佳起點。</div>
+  </div>
+
+  <div class="card"><h2>公式與逐步計算 <sup class="cite">[3]</sup></h2><div id="e_calc"></div></div>
+
+  <div class="card">
+    <h2>ECG 波形對照 <sup class="cite">[2]</sup></h2>
+    <table>
+      <tr><th>波形</th><th>意義</th></tr>
+      <tr><td><b style="color:#d4a800">P wave</b></td><td>Atrial depolarization and contraction　心房去極化與收縮</td></tr>
+      <tr><td><b style="color:#d4a800">QRS complex</b></td><td>Ventricular depolarization　心室去極化</td></tr>
+      <tr><td><b style="color:#d4a800">T wave</b></td><td>Ventricular repolarization　心室再極化</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ TAB 4 ============ -->
+<section id="t4">
+  <div class="card">
+    <h2>ECG-gating CCTA 分類 <sup class="cite">[5]</sup></h2>
+    <div class="tree" id="tree"></div>
+    <div class="note">點選右側藍色模式，會同步選取下方的比較。</div>
+  </div>
+
+  <div class="card">
+    <h2>點選比較三種 CCTA ECG gating 模式</h2>
+    <div class="grid g3" id="modes"></div>
+  </div>
+
+  <div class="card">
+    <h2>比較表 <sup class="cite">[5]</sup></h2>
+    <div style="overflow-x:auto"><table id="cmp"></table></div>
+  </div>
+
+  <div class="card">
+    <h2>情境小幫手：該選哪種模式？</h2>
+    <div class="grid g3">
+      <div><label>心率</label>
+        <select id="q_hr"><option value="low">低（穩定）</option><option value="high">高</option></select></div>
+      <div><label>節律</label>
+        <select id="q_rh"><option value="reg">規則</option><option value="irr">不規則 / 心律不整</option></select></div>
+      <div><label>目的</label>
+        <select id="q_pu"><option value="coronary">一般冠狀動脈</option><option value="stent">Stent 分析</option></select></div>
+    </div>
+    <div class="result" id="q_out"></div>
+    <div class="note">依投影片「Best Use Case」整理的教學規則；實際協定請依院內 protocol 與放射師 / 醫師判斷。</div>
+  </div>
+</section>
+
+<div class="card refs" id="refs">
+  <h2>參考文獻 References</h2>
+  <ol>
+    <li id="ref1">[1] Gerber TC, Kuzo RS, Morin RL. Techniques and parameters for estimating radiation exposure and dose in cardiac computed tomography. <i>Int J Cardiovasc Imaging</i>. 2005 Feb;21(1):165-76. doi:
+      <a href="https://doi.org/10.1007/s10554-004-5338-8" target="_blank" rel="noopener">10.1007/s10554-004-5338-8</a>.
+      PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/15915949/" target="_blank" rel="noopener">15915949</a>.
+      <br><span style="color:var(--muted)">用於：Pitch 定義與示意（Pitch 1 / 2 / 0.5）、輻射劑量概念。</span></li>
+    <li id="ref2">[2] Jokerst CE, Rajiah PS. Practical Tips and Tricks for Salvaging ECG-gated Cardiac CT from Motion Artifacts. <i>Radiographics</i>. 2025 Dec;45(12):e240247. doi:
+      <a href="https://doi.org/10.1148/rg.240247" target="_blank" rel="noopener">10.1148/rg.240247</a>.
+      PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/41264508/" target="_blank" rel="noopener">41264508</a>.
+      <br><span style="color:var(--muted)">用於：Normal ECG trace、P 波 / QRS / T 波的生理意義。</span></li>
+    <li id="ref3">[3] Herzog C, Arning-Erb M, Zangos S, Eichler K, Hammerstingl R, Dogan S, Ackermann H, Vogl TJ. Multi-detector row CT coronary angiography: influence of reconstruction technique and heart rate on image quality. <i>Radiology</i>. 2006 Jan;238(1):75-86. doi:
+      <a href="https://doi.org/10.1148/radiol.2381041595" target="_blank" rel="noopener">10.1148/radiol.2381041595</a>.
+      PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/16373760/" target="_blank" rel="noopener">16373760</a>.
+      <br><span style="color:var(--muted)">用於：Relative R-R interval (%) 與 Absolute millisecond (ms) 兩種重建視窗定義、適用情境（舒張期 vs 收縮期、心律不整）、HR 60 / 100 bpm 對照表、冠脈節段低速區 280–340 ms。</span></li>
+    <li id="ref4">[4] Siemens Healthineers. SOMATOM Force — Technical specifications.
+      <a href="https://www.siemens-healthineers.com/computed-tomography/somatom/somatom-force" target="_blank" rel="noopener">siemens-healthineers.com/computed-tomography/somatom/somatom-force</a>.
+      <br><span style="color:var(--muted)">用於：96 排 × 0.6 mm、rotation time 0.25 s、temporal resolution 66 ms、737 mm/s 等規格。</span></li>
+    <li id="ref5">[5] CCTA ECG gating protocol summary（三種模式比較表，投影片來源標註 @TPEVGH）。
+      <br><span style="color:var(--muted)">用於：ECG-gating CCTA 分類樹（Prospective：Sequential/Axial、High-pitch Flash；Retrospective：Spiral）、ECG 條帶影像編號，以及 Table movement、Data acquisition、ECG gating、劑量與 Best use case 的比較。此為投影片整理，非單一文獻。</span></li>
+    <li id="ref6">[6] Seifarth H, Wienbeck S, Püsken M, Juergens KU, Maintz D, Vahlhaus C, Heindel W, Fischbach R. Optimal systolic and diastolic reconstruction windows for coronary CT angiography using dual-source CT. <i>AJR Am J Roentgenol</i>. 2007 Dec;189(6):1317-23. doi:
+      <a href="https://doi.org/10.2214/AJR.07.2711" target="_blank" rel="noopener">10.2214/AJR.07.2711</a>；
+      <a href="https://ajronline.org/doi/10.2214/AJR.07.2711" target="_blank" rel="noopener">AJR 線上版</a>。
+      <br><span style="color:var(--muted)">用於：Table 2，不同心率（50–60、60–70、70–80、&gt;80 bpm）下最佳收縮期 / 舒張期重建視窗起點（median %）。</span></li>
+  </ol>
+  <div class="note">本頁為教學輔助工具，數值為簡化模型；臨床掃描協定請以院內規範與製造商手冊為準。</div>
+</div>
+</main>
+
+<script>
+function step(t,f,s,r){return `<div class="step"><div><b>${t}</b></div><div class="f">${f}</div><div class="s">${s}</div><div class="r">= ${r}</div></div>`;}
+</script>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (x,d=1) => Number(x).toFixed(d).replace(/\.0+$/,'');
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('#tabs button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('main section').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); $(b.dataset.t).classList.add('active');
+  };
+});
+
+/* ============ TAB 1 : Pitch ============ */
+function renderPitch(){
+  const n=+$('p_n').value||1, w=+$('p_w').value||0.1, p=+$('p_slider').value;
+  const coll=n*w, feed=p*coll;
+  $('p_coll').value=fmt(coll,2);
+  $('p_val').textContent=p.toFixed(2);
+  $('p_feed').textContent=fmt(feed,1)+' mm';
+
+  let state,cls;
+  if(Math.abs(p-1)<0.001){state='無縫接合';cls='b-good'}
+  else if(p>1){state='存在間隙 (gap)';cls='b-warn'}
+  else{state='資料重疊 (overscan)';cls='b-brand'}
+  $('p_state').innerHTML=`<span class="badge ${cls}">${state}</span>`;
+
+  // svg
+  const W=700, x0=30, usable=640, rots=3;
+  const total=feed*(rots-1)+coll, s=usable/total;
+  const colors=['#e8c52a','#d8483f','#3a56b8'];
+  let g='';
+  g+=`<defs><pattern id="hat" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="none"/><line x1="0" y1="0" x2="0" y2="6" stroke="#d33a3a" stroke-width="2"/></pattern></defs>`;
+  for(let i=0;i<rots;i++){
+    const y=14+i*38, x=x0+i*feed*s;
+    g+=`<rect x="${x}" y="${y}" width="${coll*s}" height="26" rx="4" fill="${colors[i]}" opacity=".85"/>`;
+    g+=`<text x="${x+6}" y="${y+17}" font-size="12" fill="#fff" font-weight="600">Gantry rotation ${i+1}</text>`;
+  }
+  // summary row
+  const ys=140;
+  g+=`<text x="${x0}" y="${ys-6}" font-size="12" fill="currentColor" opacity=".7">Z 軸合併後的資料覆蓋</text>`;
+  g+=`<rect x="${x0}" y="${ys}" width="${usable}" height="30" fill="none" stroke="currentColor" opacity=".25"/>`;
+  for(let i=0;i<rots;i++){
+    g+=`<rect x="${x0+i*feed*s}" y="${ys}" width="${coll*s}" height="30" fill="${colors[i]}" opacity=".55"/>`;
+  }
+  for(let i=0;i<rots-1;i++){
+    const endA=i*feed+coll, startB=(i+1)*feed;
+    if(startB>endA+1e-6){
+      g+=`<rect x="${x0+endA*s}" y="${ys}" width="${(startB-endA)*s}" height="30" fill="url(#hat)"/>`;
+    }else if(startB<endA-1e-6){
+      g+=`<rect x="${x0+startB*s}" y="${ys}" width="${(endA-startB)*s}" height="30" fill="#e08a00" opacity=".85"/>`;
+    }
+  }
+  // dimension lines
+  const dy=196;
+  g+=`<line x1="${x0}" y1="${dy}" x2="${x0+coll*s}" y2="${dy}" stroke="currentColor" stroke-width="1.5"/>`;
+  g+=`<text x="${x0+coll*s/2}" y="${dy+16}" font-size="12" text-anchor="middle" fill="currentColor">Collimation ${fmt(coll,1)} mm</text>`;
+  g+=`<line x1="${x0}" y1="${dy+26}" x2="${x0+feed*s}" y2="${dy+26}" stroke="#1f5fbf" stroke-width="1.5"/>`;
+  g+=`<text x="${x0+feed*s/2}" y="${dy+42}" font-size="12" text-anchor="middle" fill="#1f5fbf">Table feed ${fmt(feed,1)} mm</text>`;
+  $('p_svg').innerHTML=g;
+
+  // explanation
+  let html='<h2>解讀</h2><ul style="margin:0;padding-left:20px">';
+  html+=`<li><b>Pitch = 1</b>：檢查台移動距離剛好等於偵檢器寬度，資料無縫接合。</li>`;
+  html+=`<li><b>Pitch &gt; 1</b>：檢查台移動較快，資料存在間隙。<br>優點：掃描速度快、輻射劑量較低；缺點：可能犧牲 Z 軸解析度。</li>`;
+  html+=`<li><b>Pitch &lt; 1</b>：資料有重疊（Overscanning）。<br>優點：影像品質較佳，常用於心臟冠狀動脈攝影；缺點：輻射劑量較高。</li>`;
+  html+=`</ul>`;
+  html+=`<div class="result">目前 Pitch = <b>${p.toFixed(2)}</b>：每轉床移動 ${fmt(feed,1)} mm，偵檢器寬度 ${fmt(coll,1)} mm → `;
+  if(Math.abs(p-1)<0.001) html+='資料剛好無縫接合。';
+  else if(p>1) html+=`每轉產生 ${fmt(feed-coll,1)} mm 的間隙（由螺旋插值補足），劑量低、速度快。`;
+  else html+=`每轉重疊 ${fmt(coll-feed,1)} mm（約 ${fmt((1-p)*100,0)}% 重疊），影像品質佳、劑量較高。`;
+  html+=`</div>`;
+  $('p_explain').innerHTML=html;
+
+  let c='';
+  c+=step('① Total Collimation Width','Collimation = 物理排數 × 單排寬度',`${n} × ${w} mm`,`${fmt(coll,2)} mm`);
+  c+=step('② Gantry move distance (Table feed / 每轉)','Feed = Pitch × Total Collimation Width',`${p.toFixed(2)} × ${fmt(coll,2)} mm`,`${fmt(feed,2)} mm`);
+  c+=step('③ 驗算 Pitch','Pitch = Gantry move distance ÷ Total Collimation Width',`${fmt(feed,2)} ÷ ${fmt(coll,2)}`,`${(feed/coll).toFixed(2)}`);
+  const diff=feed-coll;
+  if(Math.abs(diff)<1e-6) c+=step('④ 間隙 / 重疊','Gap = Feed − Collimation',`${fmt(feed,2)} − ${fmt(coll,2)}`,'0 mm（無縫接合）');
+  else if(diff>0) c+=step('④ 每轉間隙 (gap)','Gap = Feed − Collimation',`${fmt(feed,2)} − ${fmt(coll,2)}`,`${fmt(diff,2)} mm`);
+  else c+=step('④ 每轉重疊 (overlap)','Overlap = Collimation − Feed；重疊比例 = (1 − Pitch) × 100%',`${fmt(coll,2)} − ${fmt(feed,2)}；(1 − ${p.toFixed(2)}) × 100%`,`${fmt(-diff,2)} mm（約 ${fmt((1-p)*100,0)}%）`);
+  c+=step('⑤ 3 圈旋轉的 Z 軸總長（圖中範圍）','Length = Feed × (旋轉圈數 − 1) + Collimation',`${fmt(feed,2)} × 2 + ${fmt(coll,2)}`,`${fmt(feed*2+coll,2)} mm`);
+  $('p_calc').innerHTML=c;
+}
+['p_n','p_w','p_slider'].forEach(id=>$(id).addEventListener('input',renderPitch));
+document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{$('p_slider').value=b.dataset.p;renderPitch();});
+renderPitch();
+
+/* ============ TAB 2 : Specs ============ */
+function renderSpec(){
+  const p=+$('s_p').value, n=+$('s_n').value, w=+$('s_w').value,
+        T=+$('s_rot').value, S=+$('s_scan').value, k=+$('s_k').value;
+  const coll=n*w, feed=p*coll, speed=feed/T, rots=S/T, cov=feed*rots, tr=T*1000/(2*k);
+  $('r_coll').textContent=`${fmt(coll,2)} mm (${fmt(coll/10,2)} cm)`;
+  $('r_feed').textContent=`${fmt(feed,1)} mm`;
+  $('r_speed').textContent=`${fmt(speed,0)} mm/s`;
+  $('r_rots').textContent=fmt(rots,2);
+  $('r_cov').textContent=`${fmt(cov,1)} mm (${fmt(cov/10,1)} cm)`;
+  $('r_temp').textContent=`${fmt(tr,1)} ms`;
+
+  let c='';
+  c+=step('① Total Collimation Width','Collimation = 物理排數 × 單排寬度',`${n} × ${w} mm`,`${fmt(coll,2)} mm = ${fmt(coll/10,2)} cm`);
+  c+=step('② Gantry move distance（每轉）','Feed = Pitch × Collimation',`${p} × ${fmt(coll,2)} mm`,`${fmt(feed,2)} mm = ${fmt(feed/10,2)} cm`);
+  c+=step('③ Scan speed（Table speed）','Speed = Feed ÷ Rotation time',`${fmt(feed,2)} mm ÷ ${T} s`,`${fmt(speed,1)} mm/s`);
+  c+=step('④ Total rotation number','Rotations = Scan time ÷ Rotation time',`${S} s ÷ ${T} s`,`${fmt(rots,2)} 圈`);
+  c+=step('⑤ Z-axis Coverage（方法 A）','Coverage = Gantry move distance × Total Rotation Number',`${fmt(feed,2)} mm × ${fmt(rots,2)}`,`${fmt(cov,1)} mm = ${fmt(cov/10,2)} cm`);
+  c+=step('⑤′ Z-axis Coverage（方法 B，驗算）','Coverage = Pitch × Collimation × Scan time ÷ Rotation time',`${p} × ${fmt(coll,2)} mm × ${S} s ÷ ${T} s`,`${fmt(p*coll*S/T,1)} mm`);
+  c+=step('⑥ Temporal resolution','TR = Rotation time × (½ × 1/光源數)',`${T*1000} ms × (1/2 × 1/${k})`,`${fmt(tr,1)} ms${k===2?'（= Rotation time ÷ 4）':'（= Rotation time ÷ 2）'}`);
+  $('s_calc').innerHTML=c;
+  $('s_note').textContent=`例：${n} 排 × ${w} mm = ${fmt(coll,2)} mm；Pitch ${p} → 每轉 ${fmt(feed,1)} mm；${fmt(rots,2)} 圈 → 覆蓋 ${fmt(cov/10,1)} cm。`
+    + (k===2 ? ' 雙源時 temporal resolution 理論值 = rotation time ÷ 4（實機規格表多會再略大，因含硬體延遲）。' : '');
+}
+['s_p','s_n','s_w','s_rot','s_scan','s_k'].forEach(id=>$(id).addEventListener('input',renderSpec));
+$('pre_64').onclick=()=>{ $('s_p').value=1;$('s_n').value=64;$('s_w').value=0.625;$('s_rot').value=0.5;$('s_scan').value=5;$('s_k').value=1;renderSpec();};
+$('pre_sie').onclick=()=>{ $('s_p').value=3.2;$('s_n').value=96;$('s_w').value=0.6;$('s_rot').value=0.25;$('s_scan').value=0.25;$('s_k').value=2;renderSpec();};
+renderSpec();
+
+/* ============ TAB 3 : ECG ============ */
+let mode='rel';
+function gauss(t,mu,sig,a){const d=(t-mu)/sig;return a*Math.exp(-0.5*d*d);}
+function ecgY(t,RR){
+  const Tc=0.3*RR+90, Pc=RR*0.88-20;
+  let y=0;
+  for(const off of [0,RR]){
+    y+=gauss(t,off,11,1.0);
+    y+=gauss(t,off-24,7,-0.16);
+    y+=gauss(t,off+26,9,-0.26);
+  }
+  y+=gauss(t,Tc,48,0.3);
+  y+=gauss(t,Pc,26,0.15);
+  y+=gauss(t,-RR*0.12-20+0,26,0.0);
+  return y;
+}
+function renderEcg(){
+  const hr=+$('e_hr').value, RR=60000/hr;
+  $('e_hr_v').textContent=hr; $('e_rr_v').textContent=fmt(RR,0);
+
+  let sMs,eMs;
+  if(mode==='rel'){
+    let sp=+$('e_s').value, ep=+$('e_e').value;
+    if(ep<=sp){ep=Math.min(95,sp+5);}
+    $('e_s_v').textContent=sp; $('e_e_v').textContent=ep;
+    sMs=sp/100*RR; eMs=ep/100*RR;
+  }else{
+    sMs=+$('e_as').value; const len=+$('e_al').value;
+    $('e_as_v').textContent=sMs; $('e_al_v').textContent=len;
+    eMs=sMs+len;
+  }
+  const clip=RR*0.95;
+  const eEff=Math.min(eMs,clip);
+  const tr=+$('e_scan').value;
+
+  // svg
+  const W=760,H=270,x0=30,ux=700, tmin=-90, tmax=RR+90;
+  const X=t=>x0+(t-tmin)/(tmax-tmin)*ux;
+  const base=150, amp=95;
+  let g='';
+  // 5% bars
+  for(let i=0;i<20;i++){
+    const t=i*0.05*RR, w=0.04*RR;
+    g+=`<rect x="${X(t)}" y="205" width="${X(t+w)-X(t)}" height="36" rx="2" fill="#aab3c0" opacity=".28"/>`;
+  }
+  {
+    const ox=OPT[optIdx(hr)];
+    const xs=X(ox.sys/100*RR), xd=X(ox.dia/100*RR);
+    g+=`<line x1="${xs}" y1="30" x2="${xs}" y2="205" stroke="#5be08c" stroke-width="1.8" stroke-dasharray="5 4"/>`;
+    g+=`<text x="${xs+3}" y="42" font-size="11" fill="#5be08c" stroke="#0b0f14" stroke-width="3" paint-order="stroke">收縮期最佳起點 ${ox.sys}%（${fmt(ox.sys/100*RR,0)} ms）</text>`;
+    g+=`<line x1="${xd}" y1="30" x2="${xd}" y2="205" stroke="#5be08c" stroke-width="1.8" stroke-dasharray="5 4"/>`;
+    g+=`<text x="${xd-3}" y="60" font-size="11" fill="#5be08c" text-anchor="end" stroke="#0b0f14" stroke-width="3" paint-order="stroke">舒張期最佳起點 ${ox.dia}%（${fmt(ox.dia/100*RR,0)} ms）</text>`;
+  }
+  // window
+  g+=`<rect x="${X(sMs)}" y="30" width="${Math.max(2,X(eEff)-X(sMs))}" height="211" fill="#ff5a5a" opacity=".16" stroke="#ff6b6b" stroke-width="1.5"/>`;
+  // temporal resolution block
+  const trEnd=Math.min(sMs+tr,tmax);
+  g+=`<rect x="${X(sMs)}" y="214" width="${Math.max(2,X(trEnd)-X(sMs))}" height="18" fill="#ff9a1f" opacity=".95"/>`;
+  g+=`<text x="${X(sMs)+4}" y="227" font-size="11" fill="#111" font-weight="700">${fmt(tr,1)} ms</text>`;
+  // ECG path
+  let d='';
+  for(let t=tmin;t<=tmax;t+=Math.max(2,RR/400)){
+    const y=base-ecgY(t,RR)*amp;
+    d+=(d?'L':'M')+X(t).toFixed(1)+' '+y.toFixed(1);
+  }
+  g+=`<path d="${d}" fill="none" stroke="#ffd84a" stroke-width="2.4" stroke-linejoin="round"/>`;
+  // labels
+  const lab=(t,y,txt)=>`<text x="${X(t)}" y="${y}" font-size="15" font-weight="700" fill="#ffd84a" text-anchor="middle">${txt}</text>`;
+  g+=lab(0,22,'R')+lab(RR,22,'R');
+  g+=lab(RR*0.88-20,base-0.15*amp-12,'P');
+  g+=lab(-24,base+0.16*amp+34,'Q');
+  g+=lab(30,base+0.26*amp+34,'S');
+  g+=lab(0.3*RR+90,base-0.3*amp-12,'T');
+  // axis
+  g+=`<line x1="${X(0)}" y1="248" x2="${X(RR)}" y2="248" stroke="#8a95a5"/>`;
+  [0,25,50,75,100].forEach(p=>{
+    const t=p/100*RR;
+    g+=`<line x1="${X(t)}" y1="244" x2="${X(t)}" y2="252" stroke="#8a95a5"/>`;
+    g+=`<text x="${X(t)}" y="264" font-size="11" fill="#aab3c0" text-anchor="middle">${p}% · ${fmt(t,0)} ms</text>`;
+  });
+  $('e_svg').innerHTML=g;
+
+  $('e_win').textContent=`${fmt(sMs,0)} – ${fmt(eMs,0)} ms`;
+  $('e_pct').textContent=`${fmt(sMs/RR*100,0)} – ${fmt(eMs/RR*100,0)} %`;
+  $('e_len').textContent=`${fmt(eMs-sMs,0)} ms`;
+
+  let c='';
+  c+=step('① R-R interval','RR (ms) = 60,000 ÷ HR (bpm)',`60000 ÷ ${hr}`,`${fmt(RR,1)} ms（HR=60 bpm 時為 1000 ms）`);
+  if(mode==='rel'){
+    const sp=sMs/RR*100, ep=eMs/RR*100;
+    c+=step('② Relative → Absolute（起點）','ms = (% ÷ 100) × RR',`(${fmt(sp,0)} ÷ 100) × ${fmt(RR,1)}`,`${fmt(sMs,1)} ms`);
+    c+=step('③ Relative → Absolute（終點）','ms = (% ÷ 100) × RR',`(${fmt(ep,0)} ÷ 100) × ${fmt(RR,1)}`,`${fmt(eMs,1)} ms`);
+  }else{
+    c+=step('② Absolute → Relative（起點）','% = ms ÷ RR × 100',`${fmt(sMs,0)} ÷ ${fmt(RR,1)} × 100`,`${fmt(sMs/RR*100,1)} %`);
+    c+=step('③ Absolute → Relative（終點）','% = ms ÷ RR × 100',`${fmt(eMs,0)} ÷ ${fmt(RR,1)} × 100`,`${fmt(eMs/RR*100,1)} %`);
+  }
+  c+=step('④ 視窗長度','Window = End − Start',`${fmt(eMs,1)} − ${fmt(sMs,1)}`,`${fmt(eMs-sMs,1)} ms`);
+  c+=step('⑤ Temporal resolution 占 R-R 比例','Ratio = TR ÷ RR × 100%',`${fmt(tr,1)} ÷ ${fmt(RR,1)} × 100`,`${fmt(tr/RR*100,1)} %`);
+  c+=step('⑥ 一個 R-R 內可容納幾個 TR','N = RR ÷ TR',`${fmt(RR,1)} ÷ ${fmt(tr,1)}`,`${fmt(RR/tr,1)} 個`);
+  if(eMs>RR*0.95) c+=`<div class="note">⚠ 視窗終點超過 95%（圖中已截到 95%），Relative 視窗通常限制在 0–95%。</div>`;
+  $('e_calc').innerHTML=c;
+  renderCmp();
+  renderOpt();
+  const ratio=tr/RR*100;
+  const cls=ratio<8?'b-good':ratio<14?'b-warn':'b-bad';
+  const txt=ratio<8?'佔比低':ratio<14?'佔比中等':'佔比偏高';
+  $('e_tr').innerHTML=`${fmt(ratio,1)} % <span class="badge ${cls}" style="margin-left:6px">${txt}</span>`;
+}
+['e_hr','e_s','e_e','e_as','e_al','e_scan'].forEach(id=>$(id).addEventListener('input',renderEcg));
+['c_rel','c_abs'].forEach(id=>$(id).addEventListener('input',()=>renderCmp()));
+function setMode(m){
+  mode=m;
+  $('m_rel').classList.toggle('on',m==='rel'); $('m_abs').classList.toggle('on',m==='abs');
+  $('rel_ctl').style.display=m==='rel'?'grid':'none';
+  $('abs_ctl').style.display=m==='abs'?'grid':'none';
+  renderEcg();
+}
+$('m_rel').onclick=()=>setMode('rel'); $('m_abs').onclick=()=>setMode('abs');
+
+function renderCmp(){
+  const hr=+$('e_hr').value, rp=+$('c_rel').value, am=+$('c_abs').value;
+  $('c_rel_v').textContent=rp; $('c_abs_v').textContent=am;
+  const list=[{n:'HR 60 bpm',h:60},{n:'HR 100 bpm',h:100},{n:`目前 HR ${hr} bpm`,h:hr}];
+  const x0=100,ux=610,maxT=1600,X=t=>x0+t/maxT*ux;
+  let g='';
+  list.forEach((o,i)=>{
+    const RR=60000/o.h, y=30+i*68;
+    g+=`<text x="2" y="${y+14}" font-size="12" fill="currentColor">${o.n}</text>`;
+    g+=`<rect x="${X(0)}" y="${y}" width="${X(RR)-X(0)}" height="20" rx="3" fill="#aab3c0" opacity=".35"/>`;
+    g+=`<text x="${X(RR)+4}" y="${y+14}" font-size="11" fill="currentColor" opacity=".7">R-R ${fmt(RR,0)} ms</text>`;
+    const tr=rp/100*RR;
+    g+=`<line x1="${X(tr)}" y1="${y-6}" x2="${X(tr)}" y2="${y+26}" stroke="#e08a00" stroke-width="3"/>`;
+    g+=`<text x="${X(tr)}" y="${y-9}" font-size="11" text-anchor="middle" fill="#e08a00">${rp}% = ${fmt(tr,0)} ms</text>`;
+    if(am<=RR){
+      g+=`<line x1="${X(am)}" y1="${y-2}" x2="${X(am)}" y2="${y+26}" stroke="#1f7ae0" stroke-width="3"/>`;
+      g+=`<text x="${X(am)}" y="${y+40}" font-size="11" text-anchor="middle" fill="#1f7ae0">${am} ms = ${fmt(am/RR*100,0)}%</text>`;
+    }else{
+      g+=`<text x="${X(0)}" y="${y+40}" font-size="11" fill="#1f7ae0">Absolute ${am} ms 超出此 R-R</text>`;
+    }
+  });
+  const ay=226;
+  g+=`<line x1="${X(0)}" y1="${ay}" x2="${X(1500)}" y2="${ay}" stroke="currentColor" opacity=".4"/>`;
+  [0,500,1000,1500].forEach(t=>{
+    g+=`<line x1="${X(t)}" y1="${ay-4}" x2="${X(t)}" y2="${ay+4}" stroke="currentColor" opacity=".5"/>`;
+    g+=`<text x="${X(t)}" y="${ay+17}" font-size="11" text-anchor="middle" fill="currentColor" opacity=".7">${t} ms</text>`;
+  });
+  $('c_svg').innerHTML=g;
+
+  const RRc=60000/hr;
+  let h='<tr><th>項目</th><th>HR 60 bpm</th><th>HR 100 bpm</th><th>目前 HR '+hr+' bpm</th></tr>';
+  h+=`<tr><th style="text-align:left">R-R interval</th><td>1000 ms</td><td>600 ms</td><td>${fmt(RRc,0)} ms</td></tr>`;
+  h+=`<tr><th style="text-align:left">Diastole duration（投影片）</th><td style="color:var(--bad)">~665 ms</td><td style="color:var(--bad)">~400 ms</td><td>—</td></tr>`;
+  h+=`<tr><th style="text-align:left">70% R-R interval（投影片）</th><td>~700 ms</td><td>~525 ms</td><td>—</td></tr>`;
+  h+=`<tr><th style="text-align:left">Relative ${rp}% → ms（計算）</th><td>${fmt(rp/100*1000,0)} ms</td><td>${fmt(rp/100*600,0)} ms</td><td>${fmt(rp/100*RRc,0)} ms</td></tr>`;
+  h+=`<tr><th style="text-align:left">Absolute ${am} ms → % R-R（計算）</th><td>${fmt(am/1000*100,0)} %</td><td>${fmt(am/600*100,0)} %</td><td>${fmt(am/RRc*100,0)} %</td></tr>`;
+  $('c_tbl').innerHTML=h;
+
+  let c='';
+  c+=step('Relative → Absolute（目前 HR）','ms = (% ÷ 100) × (60000 ÷ HR)',`(${rp} ÷ 100) × (60000 ÷ ${hr})`,`${fmt(rp/100*RRc,1)} ms`);
+  c+=step('Absolute → Relative（目前 HR）','% = ms ÷ (60000 ÷ HR) × 100',`${am} ÷ ${fmt(RRc,1)} × 100`,`${fmt(am/RRc*100,1)} %`);
+  c+=`<div class="note">HR 從 60 升到 100 bpm：Relative ${rp}% 由 ${fmt(rp*10,0)} ms 移到 ${fmt(rp*6,0)} ms（時間點改變）；Absolute ${am} ms 由 ${fmt(am/10,0)}% 移到 ${fmt(am/6,0)}%（時間點不變、百分比改變）。</div>`;
+  $('c_calc').innerHTML=c;
+}
+$('pre_dia').onclick=()=>{ $('e_s').value=70; $('e_e').value=80; $('c_rel').value=70; setMode('rel'); };
+$('pre_sys').onclick=()=>{ $('e_as').value=350; $('e_al').value=50; $('c_abs').value=350; setMode('abs'); };
+$('pre_sys_rel').onclick=()=>{ $('e_s').value=35; $('e_e').value=50; $('c_rel').value=35; setMode('rel'); };
+
+const OPT=[
+  {lab:'50–60',sys:30,dia:70},
+  {lab:'60–70',sys:35,dia:75},
+  {lab:'70–80',sys:35,dia:75},
+  {lab:'> 80', sys:40,dia:85}
+];
+function optIdx(hr){ return hr<=60?0 : hr<=70?1 : hr<=80?2 : 3; }
+function renderOpt(){
+  const hr=+$('e_hr').value, RR=60000/hr, ix=optIdx(hr), o=OPT[ix];
+  let h='<tr><th>Heart Rate (bpm)</th><th>Systolic（起點 median %）</th><th>Diastolic（起點 median %）</th></tr>';
+  OPT.forEach((r,i)=>{
+    const c=i===ix?'hl':'';
+    h+=`<tr><td class="${c}">${r.lab}</td><td class="${c}">${r.sys}</td><td class="${c}">${r.dia}</td></tr>`;
+  });
+  $('o_tbl').innerHTML=h;
+  let t=`目前 HR <b>${hr} bpm</b>（R-R ${fmt(RR,0)} ms）→ 收縮期起點 <b>${o.sys}%</b> = ${fmt(o.sys/100*RR,0)} ms；舒張期起點 <b>${o.dia}%</b> = ${fmt(o.dia/100*RR,0)} ms`;
+  if(hr<50) t+='（低於表中 50 bpm 下限，暫以 50–60 列參考）';
+  $('o_cur').innerHTML=t;
+}
+$('ap_sys').onclick=()=>{ const o=OPT[optIdx(+$('e_hr').value)]; $('e_s').value=o.sys; $('e_e').value=Math.min(95,o.sys+15); $('c_rel').value=o.sys; setMode('rel'); };
+$('ap_dia').onclick=()=>{ const o=OPT[optIdx(+$('e_hr').value)]; $('e_s').value=o.dia; $('e_e').value=Math.min(95,o.dia+10); $('c_rel').value=o.dia; setMode('rel'); };
+renderEcg();
+
+/* ============ TAB 4 : CCTA modes ============ */
+const MODES=[
+ {k:'retro',name:'Retrospective Helical / Spiral',table:'Continuous Moving · Low pitch (slow)',acq:'Continuous · 3–5 heart beat',gate:'Retrospective',dose:'Highest',lvl:100,col:'#d33a3a',use:'Stent Analysis, High Heart Rates, Arrhythmia',anim:'slow',imgs:'1–124、125–220、221–307（多個心跳重疊拼接）'},
+ {k:'flash',name:'High pitch spiral / helical ("Flash")',table:'Continuous Moving · High Pitch (fast)',acq:'Continuous · 1 heart beat',gate:'Prospective',dose:'Lowest',lvl:28,col:'#1a9a5b',use:'Low Regular Heart Rates',anim:'fast',imgs:'1–326（單一心跳完成）'},
+ {k:'axial',name:'Axial / Sequential',table:'Stationary during X-ray (Step-and-Shoot)',acq:'Discontinuous · Every other heartbeat',gate:'Prospective',dose:'Middle',lvl:60,col:'#e08a00',use:'Low Regular Heart Rates',anim:'stepgo',imgs:'1–134、135–241、242–318（逐段 step-and-shoot）'}
+];
+let selMode='retro';
+
+function miniEcg(m){
+  // 6 beats strip + exposure blocks
+  const W=300,H=70, beat=50;
+  let d='M0 40';
+  for(let i=0;i<6;i++){
+    const x=i*beat+6;
+    d+=` L${x} 40 L${x+3} 8 L${x+6} 48 L${x+10} 40 L${x+22} 36 L${x+30} 40`;
+  }
+  d+=' L300 40';
+  let blocks='';
+  if(m.k==='retro'){ blocks=`<rect x="0" y="56" width="300" height="8" fill="${m.col}" opacity=".8"/>`; }
+  if(m.k==='flash'){ blocks=`<rect x="${2*beat+10}" y="56" width="${beat*0.6}" height="8" fill="${m.col}" opacity=".95"/>`; }
+  if(m.k==='axial'){ for(const i of [0,2,4]) blocks+=`<rect x="${i*beat+12}" y="56" width="${beat*0.55}" height="8" fill="${m.col}" opacity=".95"/>`; }
+  return `<svg viewBox="0 0 ${W} ${H}" style="background:#0b0f14;border-radius:8px"><path d="${d}" fill="none" stroke="#ffd84a" stroke-width="1.6"/>${blocks}</svg>`;
+}
+function renderModes(){
+  $('modes').innerHTML=MODES.map(m=>`
+    <div class="card mode ${m.k===selMode?'sel':''}" data-k="${m.k}" style="margin:0">
+      <div style="font-weight:700;margin-bottom:6px;color:${m.col}">${m.name}</div>
+      ${miniEcg(m)}
+      <div class="track"><div class="dot ${m.anim}">床</div></div>
+      <div style="font-size:.82rem;color:var(--muted)">輻射劑量：<b style="color:var(--ink)">${m.dose}</b></div>
+      <div class="dose"><i style="width:${m.lvl}%;background:${m.col}"></i></div>
+      <div style="font-size:.8rem;margin-top:6px">${m.use}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:4px">投影片 ECG 條帶標示的影像編號：${m.imgs}</div>
+    </div>`).join('');
+  document.querySelectorAll('.mode').forEach(c=>c.onclick=()=>{selMode=c.dataset.k;renderModes();renderTable();renderTree();});
+}
+function renderTable(){
+  const ix=MODES.findIndex(m=>m.k===selMode)+1;
+  const rows=[['Table Movement','table'],['Data Acquisition','acq'],['ECG Gating','gate'],['Radiation Dose (mean DLP, mGy·cm)','dose'],['Best Use Case','use'],['影像編號（投影片範例）','imgs']];
+  let h='<tr><th></th>'+MODES.map((m,i)=>`<th class="${i+1===ix?'hl':''}">${m.name}</th>`).join('')+'</tr>';
+  rows.forEach(r=>{
+    h+=`<tr><th style="text-align:left">${r[0]}</th>`+MODES.map((m,i)=>`<td class="${i+1===ix?'hl':''}">${m[r[1]]}</td>`).join('')+'</tr>';
+  });
+  $('cmp').innerHTML=h;
+}
+function recommend(){
+  const hr=$('q_hr').value, rh=$('q_rh').value, pu=$('q_pu').value;
+  let out;
+  if(rh==='irr'||hr==='high'||pu==='stent'){
+    const why=[]; if(rh==='irr')why.push('心律不整'); if(hr==='high')why.push('高心率'); if(pu==='stent')why.push('Stent 分析');
+    out=`<b>Retrospective Helical / Spiral</b>（${why.join('、')}）<br>連續擷取 3–5 個心跳，可事後選擇最佳 phase、甚至編輯異常心搏；代價是輻射劑量最高。`;
+  }else{
+    out=`<b>High pitch "Flash"</b>（劑量最低，單一心跳完成）<br>低且規則的心率最適合；若無 Flash 能力，<b>Axial / Sequential</b>（劑量中等，隔一個心跳曝光）也是選項。`;
+  }
+  out+='<br><br><b>建議重建視窗：</b>'+(rh==='irr'
+    ? 'Absolute (ms)（心律不整，每個心動週期取同一時間點）'
+    : hr==='high'
+      ? 'Absolute (ms) 收縮期重建（HR↑ 時舒張期縮短）'
+      : 'Relative (R-R%) 舒張期重建（慢且規則的心率）');
+  $('q_out').innerHTML=out;
+}
+function renderTree(){
+  const leaf=(k,t)=>`<div class="tn leaf ${selMode===k?'sel':''}" data-k="${k}">${t}</div>`;
+  $('tree').innerHTML=`
+    <div class="tn root">ECG-gating CCTA</div><span class="arr">▸</span>
+    <div class="tcol">
+      <div class="trow"><div class="tn mid">Prospective</div><span class="arr">▸</span>
+        <div class="tcol">${leaf('axial','Sequential / Axial mode (Step-and-shoot)')}${leaf('flash','High-pitch spiral mode (Flash)')}</div></div>
+      <div class="trow"><div class="tn mid">Retrospective</div><span class="arr">▸</span>
+        <div class="tcol">${leaf('retro','Spiral mode')}</div></div>
+    </div>`;
+  document.querySelectorAll('#tree .leaf').forEach(c=>c.onclick=()=>{selMode=c.dataset.k;renderModes();renderTable();renderTree();});
+}
+['q_hr','q_rh','q_pu'].forEach(id=>$(id).addEventListener('change',recommend));
+renderModes(); renderTable(); renderTree(); recommend();
+</script>
+</body>
+</html>
