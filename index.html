@@ -187,8 +187,15 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
     <h2>Normal ECG trace（sinus rhythm） <sup class="cite">[2][3]</sup></h2>
     <div class="grid g2">
       <div>
-        <label>心率 HR：<b id="e_hr_v">60</b> bpm　→　R-R interval = <b id="e_rr_v">1000</b> ms</label>
-        <input type="range" id="e_hr" min="40" max="140" step="1" value="60">
+        <label>心率 HR：<b id="e_hr_v">60</b> bpm　→　R-R interval = <b id="e_rr_v">1000</b> ms <span id="e_zone" style="margin-left:6px"></span></label>
+        <input type="range" id="e_hr" min="40" max="180" step="1" value="60">
+        <div class="row" style="margin-top:6px">
+          <button class="pill" data-hr="45">過緩 45</button>
+          <button class="pill" data-hr="60">60</button>
+          <button class="pill" data-hr="75">正常 75</button>
+          <button class="pill" data-hr="110">過速 110</button>
+          <button class="pill" data-hr="170">極快 170</button>
+        </div>
       </div>
       <div>
         <label>視窗定義方式</label>
@@ -215,6 +222,24 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
       <div class="stat"><b id="e_pct">—</b><span>視窗（相對 R-R %）</span></div>
       <div class="stat"><b id="e_len">—</b><span>視窗長度</span></div>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>EKG 波形隨心率的變化</h2>
+    <div class="stats" id="z_stats"></div>
+    <div class="result" id="z_text"></div>
+    <div style="overflow-x:auto;margin-top:12px"><table id="z_tbl"></table></div>
+    <div class="note">本 App 的 EKG 為示意模型：PR 間距隨心率縮短（約 100–200 ms）、QRS 固定約 90 ms、QT 依 Bazett 公式 QT = QTc × √RR（秒）計算，QTc 假設為 400 ms；U 波僅在 HR &lt; 60 bpm 時出現；HR 越高，下一個 P 波越靠近前一個 T 波。真實心電圖因人而異，僅供教學。本節文字依使用者提供的整理撰寫，未附文獻出處，如需引用請補充來源。</div>
+  </div>
+
+  <div class="card">
+    <h2>連續節律條：HRV、竇性心律不整與基線漂移</h2>
+    <div class="row" style="margin-bottom:8px">
+      <label style="display:inline-flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="rs_arr" checked> 呼吸性竇性心律不整 / HRV</label>
+      <label style="display:inline-flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="rs_bw"> 基線漂移 / 運動偽影</label>
+    </div>
+    <div class="ecgbox"><svg id="rs_svg" viewBox="0 0 760 200" role="img" aria-label="rhythm strip"></svg></div>
+    <div class="note" id="rs_txt"></div>
   </div>
 
   <div class="card">
@@ -283,6 +308,9 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
       <tr><td><b style="color:#d4a800">P wave</b></td><td>Atrial depolarization and contraction　心房去極化與收縮</td></tr>
       <tr><td><b style="color:#d4a800">QRS complex</b></td><td>Ventricular depolarization　心室去極化</td></tr>
       <tr><td><b style="color:#d4a800">T wave</b></td><td>Ventricular repolarization　心室再極化</td></tr>
+      <tr><td><b style="color:#d4a800">PR interval</b></td><td>房室結傳導延遲（正常 0.12–0.20 s），心率越快越短</td></tr>
+      <tr><td><b style="color:#d4a800">QT interval</b></td><td>心室去極化＋再極化全程，隨心率動態調整（快則短、慢則長）</td></tr>
+      <tr><td><b style="color:#d4a800">U wave</b></td><td>心室後再極化 / 乳頭肌再極化，慢心率時較明顯</td></tr>
     </table>
   </div>
 </section>
@@ -474,21 +502,129 @@ renderSpec();
 /* ============ TAB 3 : ECG ============ */
 let mode='rel';
 function gauss(t,mu,sig,a){const d=(t-mu)/sig;return a*Math.exp(-0.5*d*d);}
-function ecgY(t,RR){
-  const Tc=0.3*RR+90, Pc=RR*0.88-20;
-  let y=0;
-  for(const off of [0,RR]){
-    y+=gauss(t,off,11,1.0);
-    y+=gauss(t,off-24,7,-0.16);
-    y+=gauss(t,off+26,9,-0.26);
-  }
-  y+=gauss(t,Tc,48,0.3);
-  y+=gauss(t,Pc,26,0.15);
-  y+=gauss(t,-RR*0.12-20+0,26,0.0);
-  return y;
+/* EKG 示意模型（時間以 ms 計，相對本次 R 波） */
+function ecgParams(hr){
+  const RR=60000/hr;
+  const PR=Math.max(100,Math.min(200,160-(hr-60)*0.5));   // PR 間距：心率越快越短
+  const QT=400*Math.sqrt(RR/1000);                          // Bazett：QT = QTc × √RR(s)，QTc 假設 400 ms
+  const q0=-40;                                             // QRS 起點（QRS 約 90 ms）
+  const tEnd=q0+QT;                                         // T 波終點
+  const pC=q0-PR+45;                                        // P 波中心（P 波寬約 90 ms）
+  const uAmp=hr<60?0.12*Math.min(1,(60-hr)/15):0;           // U 波：慢心率才明顯
+  const gap=(RR+q0-PR)-tEnd;                                // 下一個 P 波起點 − 本次 T 波終點
+  return {hr,RR,PR,QRS:90,QT,QTc:400,q0,tEnd,pC,tPeak:q0+QT*0.62,tSig:QT*0.14,uC:tEnd+50,uAmp,gap,fusion:gap<40};
 }
+function beatY(dt,P){
+  return gauss(dt,0,11,1.0)+gauss(dt,-24,7,-0.16)+gauss(dt,26,9,-0.26)   // QRS
+    +gauss(dt,P.pC,24,0.15)                                              // P
+    +gauss(dt,P.tPeak,P.tSig,0.30)                                       // T
+    +gauss(dt,P.uC,28,P.uAmp);                                           // U
+}
+function ecgY(t,P){ return beatY(t,P)+beatY(t-P.RR,P); }
+
+function renderZone(P){
+  const hr=P.hr;
+  let z,cls,key;
+  if(hr<60){z='心跳過緩 Bradycardia';cls='b-brand';key=0}
+  else if(hr<=100){z='正常竇性心律 Normal';cls='b-good';key=1}
+  else{z='心跳過速 Tachycardia';cls='b-warn';key=2}
+  $('e_zone').innerHTML=`<span class="badge ${cls}">${z}</span>`;
+  const tile=(b,s)=>`<div class="stat"><b>${b}</b><span>${s}</span></div>`;
+  $('z_stats').innerHTML=
+    tile(fmt(P.RR,0)+' ms','R-R 間距')+
+    tile(fmt(P.PR,0)+' ms','PR 間距（正常 120–200 ms）')+
+    tile(P.QRS+' ms','QRS（正常 &lt; 100 ms）')+
+    tile(fmt(P.QT,0)+' ms','QT 間距（Bazett 模型）')+
+    tile(P.QTc+' ms','QTc 假設值（正常 &lt; 440 男 / &lt; 460 女）');
+  let t='';
+  if(key===2){
+    t+=`<b>心跳過速（HR ${hr} bpm &gt; 100）</b>：心動週期整體縮短，受影響最大的是<b>舒張期</b>，收縮期縮短相對較少。<br>`;
+    t+=`• <b>QT 間距縮短</b>（模型 ${fmt(P.QT,0)} ms）：心室需更快完成去極化與再極化。若心跳很快但 QT 沒有依比例縮短（QTc 過長），提示有惡性心律不整（如 Torsades de Pointes）的潛在風險。<br>`;
+    t+=`• <b>RR 間距變窄、PR 間距縮短</b>（${fmt(P.PR,0)} ms）：房室結傳導加快。<br>`;
+    t+= P.fusion
+      ? `• <span style="color:var(--bad)"><b>P–T 重疊</b></span>：下一個 P 波與前一個 T 波幾乎相連（間隔僅 ${fmt(Math.max(P.gap,0),0)} ms），T 波變形、尖銳，P 波難以分辨（HR &gt; 150 bpm 如 SVT 常見）。`
+      : `• HR 再升高（&gt; 150 bpm，如陣發性心搏過速 SVT）時，下一個 P 波可能與前一個 T 波融合（目前間隔 ${fmt(P.gap,0)} ms）。`;
+  }else if(key===1){
+    t+=`<b>正常竇性心律（HR ${hr} bpm）</b>：標準波形比例。<br>`;
+    t+=`• P 波：心房去極化（寬度 &lt; 0.12 s）　• PR 間距：0.12–0.20 s（房室結延遲）<br>`;
+    t+=`• QRS：心室去極化（&lt; 0.10 s）　• QT 間距隨心率動態調整，QTc 通常 &lt; 0.44 s（男）/ &lt; 0.46 s（女）。`;
+  }else{
+    t+=`<b>心跳過緩（HR ${hr} bpm &lt; 60）</b>：心動週期（特別是舒張期）顯著延長，心肌獲得較充分的休息與灌注。<br>`;
+    t+=`• <b>RR 間距拉長</b>（${fmt(P.RR,0)} ms）。<br>`;
+    t+=`• <b>QT 間距延長</b>（模型 ${fmt(P.QT,0)} ms）：QT 過度延長可能誘發早期後去極化（EAD）與心室顫動。<br>`;
+    t+=`• <b>U 波變得明顯</b>：慢心率時原本埋在 T 波尾端的 U 波更容易顯現（圖中標示 U）。<br>`;
+    t+=`• 可能伴隨竇性心律不整，或交界性逸搏、異位心搏（見下方連續節律條）。`;
+  }
+  $('z_text').innerHTML=t;
+  const H=(i)=>key===i?'hl':'';
+  const rows=[
+    ['R-R 間距','拉長','0.6–1.0 s','縮短'],
+    ['PR 間距','偏長','0.12–0.20 s','縮短（房室結傳導加快）'],
+    ['QRS','&lt; 0.10 s','&lt; 0.10 s','&lt; 0.10 s'],
+    ['QT 間距','延長（過長可誘發 EAD、VF）','QTc &lt; 0.44 s 男 / &lt; 0.46 s 女','縮短；未依比例縮短（QTc 過長）提示 Torsades 風險'],
+    ['心動週期','舒張期顯著延長','—','舒張期縮短最多，收縮期縮短較少'],
+    ['特殊波形','U 波明顯、竇性心律不整、交界性逸搏','標準 P–QRS–T','P–T 重疊（&gt; 150 bpm，如 SVT）、T 波變形'],
+    ['偽影','—','—','運動、發燒、焦慮 → 基線漂移與肌肉偽影']
+  ];
+  let h=`<tr><th></th><th class="${H(0)}">Bradycardia &lt; 60</th><th class="${H(1)}">Normal 60–100</th><th class="${H(2)}">Tachycardia &gt; 100</th></tr>`;
+  rows.forEach(r=>{h+=`<tr><th style="text-align:left">${r[0]}</th><td class="${H(0)}">${r[1]}</td><td class="${H(1)}">${r[2]}</td><td class="${H(2)}">${r[3]}</td></tr>`;});
+  $('z_tbl').innerHTML=h;
+}
+
+function renderStrip(){
+  const hr=+$('e_hr').value;
+  const arr=$('rs_arr').checked, bw=$('rs_bw').checked;
+  const amp=hr<60?0.10:hr<=100?0.05:hr<=150?0.02:0.005;     // 呼吸性 R-R 變動幅度（比例）
+  const T=6000, x0=20, ux=720, base=120, A=70;
+  const X=t=>x0+t/T*ux;
+  const beats=[]; let t=250;
+  while(t<T+1500){
+    const rr=(60000/hr)*(arr?1+amp*Math.sin(2*Math.PI*t/4000):1);
+    beats.push({t,RR:rr,P:ecgParams(60000/rr)});
+    t+=rr;
+  }
+  let d='';
+  for(let ts=0;ts<=T;ts+=5){
+    let y=0;
+    for(const b of beats){
+      const dt=ts-b.t;
+      if(dt>-350&&dt<900) y+=beatY(dt,b.P);
+    }
+    if(bw) y+=0.10*Math.sin(2*Math.PI*ts/4200)+0.05*Math.sin(2*Math.PI*ts/9000+1)+0.012*Math.sin(ts*0.37)+0.01*Math.sin(ts*1.31);
+    d+=(d?'L':'M')+X(ts).toFixed(1)+' '+(base-y*A).toFixed(1);
+  }
+  let g=`<path d="${d}" fill="none" stroke="#ffd84a" stroke-width="2" stroke-linejoin="round"/>`;
+  const inWin=beats.filter(b=>b.t+b.RR<=T);
+  inWin.forEach(b=>{
+    const spacing=b.RR*ux/T;
+    g+=`<line x1="${X(b.t)}" y1="30" x2="${X(b.t+b.RR)}" y2="30" stroke="#8a95a5"/>`;
+    g+=`<line x1="${X(b.t)}" y1="26" x2="${X(b.t)}" y2="34" stroke="#8a95a5"/>`;
+    g+=`<line x1="${X(b.t+b.RR)}" y1="26" x2="${X(b.t+b.RR)}" y2="34" stroke="#8a95a5"/>`;
+    if(spacing>46) g+=`<text x="${X(b.t+b.RR/2)}" y="22" font-size="10" fill="#cbd5e1" text-anchor="middle">${fmt(b.RR,0)}</text>`;
+  });
+  g+=`<line x1="${x0}" y1="172" x2="${x0+ux}" y2="172" stroke="#8a95a5"/>`;
+  for(let s=0;s<=6;s++){
+    g+=`<line x1="${X(s*1000)}" y1="168" x2="${X(s*1000)}" y2="176" stroke="#8a95a5"/>`;
+    g+=`<text x="${X(s*1000)}" y="192" font-size="11" fill="#aab3c0" text-anchor="middle">${s} s</text>`;
+  }
+  g+=`<text x="${x0+ux}" y="14" font-size="10" fill="#cbd5e1" text-anchor="end">上方數字：R-R 間距 (ms)</text>`;
+  $('rs_svg').innerHTML=g;
+
+  const rrs=inWin.map(b=>b.RR);
+  const mn=Math.min(...rrs), mx=Math.max(...rrs);
+  let txt=`6 秒內約 ${beats.filter(b=>b.t<=T).length} 次心跳；R-R 範圍 ${fmt(mn,0)}–${fmt(mx,0)} ms（差 ${fmt(mx-mn,0)} ms）。`;
+  txt+= arr
+    ? ' 呼吸性竇性心律不整：吸氣時心跳稍快、吐氣時稍慢，慢心率時變化更明顯。'
+    : ' R-R 固定（無 HRV）。真實心電圖即使平均心率正常，每次心跳的 R-R 仍會微幅波動。';
+  if(bw) txt+=' 基線漂移：運動、發燒或焦慮常伴隨肌肉顫動與呼吸起伏，使基線上下漂移並疊加小幅雜訊。';
+  if(hr<50) txt+=' 極慢心率常伴隨竇性心律不整，或出現交界性逸搏、異位心搏（本模型未畫出）。';
+  $('rs_txt').textContent=txt;
+}
+['rs_arr','rs_bw'].forEach(id=>$(id).addEventListener('input',renderStrip));
+document.querySelectorAll('[data-hr]').forEach(b=>b.onclick=()=>{$('e_hr').value=b.dataset.hr;renderEcg();});
 function renderEcg(){
   const hr=+$('e_hr').value, RR=60000/hr;
+  const P=ecgParams(hr);
   $('e_hr_v').textContent=hr; $('e_rr_v').textContent=fmt(RR,0);
 
   let sMs,eMs;
@@ -533,17 +669,24 @@ function renderEcg(){
   // ECG path
   let d='';
   for(let t=tmin;t<=tmax;t+=Math.max(2,RR/400)){
-    const y=base-ecgY(t,RR)*amp;
+    const y=base-ecgY(t,P)*amp;
     d+=(d?'L':'M')+X(t).toFixed(1)+' '+y.toFixed(1);
   }
   g+=`<path d="${d}" fill="none" stroke="#ffd84a" stroke-width="2.4" stroke-linejoin="round"/>`;
   // labels
   const lab=(t,y,txt)=>`<text x="${X(t)}" y="${y}" font-size="15" font-weight="700" fill="#ffd84a" text-anchor="middle">${txt}</text>`;
   g+=lab(0,22,'R')+lab(RR,22,'R');
-  g+=lab(RR*0.88-20,base-0.15*amp-12,'P');
+  g+=lab(RR+P.pC,base-0.15*amp-12,'P');
   g+=lab(-24,base+0.16*amp+34,'Q');
   g+=lab(30,base+0.26*amp+34,'S');
-  g+=lab(0.3*RR+90,base-0.3*amp-12,'T');
+  g+=lab(P.tPeak,base-0.3*amp-12,'T');
+  if(P.uAmp>0.01) g+=lab(P.uC,base-P.uAmp*amp-10,'U');
+  // QT / PR 標示
+  const tx=(x,y,s,c)=>`<text x="${x}" y="${y}" font-size="10" fill="${c}" text-anchor="middle" stroke="#0b0f14" stroke-width="3" paint-order="stroke">${s}</text>`;
+  const br=(a,b,y,c)=>`<line x1="${X(a)}" y1="${y}" x2="${X(b)}" y2="${y}" stroke="${c}" stroke-width="2"/><line x1="${X(a)}" y1="${y-4}" x2="${X(a)}" y2="${y+4}" stroke="${c}" stroke-width="2"/><line x1="${X(b)}" y1="${y-4}" x2="${X(b)}" y2="${y+4}" stroke="${c}" stroke-width="2"/>`;
+  g+=br(P.q0,P.tEnd,186,'#ff8fc8')+tx(X((P.q0+P.tEnd)/2),181,`QT ${fmt(P.QT,0)} ms`,'#ff8fc8');
+  g+=br(RR+P.q0-P.PR,RR+P.q0,200,'#c9a0ff')+tx(X(RR+P.q0-P.PR/2),196,`PR ${fmt(P.PR,0)} ms`,'#c9a0ff');
+  if(P.fusion) g+=tx(X((P.tEnd+RR+P.q0-P.PR)/2),84,'P–T 重疊','#ff8a8a');
   // axis
   g+=`<line x1="${X(0)}" y1="248" x2="${X(RR)}" y2="248" stroke="#8a95a5"/>`;
   [0,25,50,75,100].forEach(p=>{
@@ -574,6 +717,8 @@ function renderEcg(){
   $('e_calc').innerHTML=c;
   renderCmp();
   renderOpt();
+  renderZone(P);
+  renderStrip();
   const ratio=tr/RR*100;
   const cls=ratio<8?'b-good':ratio<14?'b-warn':'b-bad';
   const txt=ratio<8?'佔比低':ratio<14?'佔比中等':'佔比偏高';
