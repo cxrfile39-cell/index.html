@@ -84,6 +84,10 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
 .tn.leaf.sel{outline:3px solid var(--ink);outline-offset:1px}
 .arr{color:var(--muted)}
 .tbl-note{font-size:.8rem;color:var(--bad);margin-top:6px}
+.pin{z-index:20}
+.pin.pinned{position:sticky;top:env(safe-area-inset-top,0px);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.pin .ecgbox svg{max-height:30vh}
+@media (max-height:620px){.pin.pinned{position:static;box-shadow:none}}
 </style>
 </head>
 <body>
@@ -208,27 +212,28 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
 
 <!-- ============ TAB 3 ============ -->
 <section id="t3">
+  <div class="card pin pinned" id="ecg_pin">
+    <div class="row" style="justify-content:space-between;margin-bottom:6px">
+      <h2 style="margin:0">Normal ECG trace（sinus rhythm） <sup class="cite">[2][3]</sup></h2>
+      <label style="display:inline-flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="pin_toggle" checked> 固定在畫面上方</label>
+    </div>
+    <label>心率 HR：<b id="e_hr_v">60</b> bpm　→　R-R interval = <b id="e_rr_v">1000</b> ms <span id="e_zone" style="margin-left:6px"></span></label>
+    <input type="range" id="e_hr" min="40" max="180" step="1" value="60">
+    <div class="row" style="margin-top:6px">
+      <button class="pill" data-hr="45">過緩 45</button>
+      <button class="pill" data-hr="60">60</button>
+      <button class="pill" data-hr="75">正常 75</button>
+      <button class="pill" data-hr="110">過速 110</button>
+      <button class="pill" data-hr="170">極快 170</button>
+    </div>
+    <div class="ecgbox" style="margin-top:8px"><svg id="e_svg" viewBox="0 0 760 270" role="img" aria-label="ECG"></svg></div>
+  </div>
+
   <div class="card">
-    <h2>Normal ECG trace（sinus rhythm） <sup class="cite">[2][3]</sup></h2>
-    <div class="grid g2">
-      <div>
-        <label>心率 HR：<b id="e_hr_v">60</b> bpm　→　R-R interval = <b id="e_rr_v">1000</b> ms <span id="e_zone" style="margin-left:6px"></span></label>
-        <input type="range" id="e_hr" min="40" max="180" step="1" value="60">
-        <div class="row" style="margin-top:6px">
-          <button class="pill" data-hr="45">過緩 45</button>
-          <button class="pill" data-hr="60">60</button>
-          <button class="pill" data-hr="75">正常 75</button>
-          <button class="pill" data-hr="110">過速 110</button>
-          <button class="pill" data-hr="170">極快 170</button>
-        </div>
-      </div>
-      <div>
-        <label>視窗定義方式</label>
-        <div class="row">
-          <button class="pill on" id="m_rel">Relative R-R (%)</button>
-          <button class="pill" id="m_abs">Absolute (ms)</button>
-        </div>
-      </div>
+    <label>視窗定義方式</label>
+    <div class="row">
+      <button class="pill on" id="m_rel">Relative R-R (%)</button>
+      <button class="pill" id="m_abs">Absolute (ms)</button>
     </div>
 
     <div id="rel_ctl" class="grid g2" style="margin-top:10px">
@@ -239,8 +244,6 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
       <div><label>視窗起點（R 波後）：<b id="e_as_v">400</b> ms</label><input type="range" id="e_as" min="0" max="900" step="10" value="400"></div>
       <div><label>視窗長度：<b id="e_al_v">400</b> ms</label><input type="range" id="e_al" min="50" max="600" step="10" value="400"></div>
     </div>
-
-    <div class="ecgbox" style="margin-top:10px"><svg id="e_svg" viewBox="0 0 760 270" role="img" aria-label="ECG"></svg></div>
 
     <div class="stats">
       <div class="stat"><b id="e_win">—</b><span>重建視窗（絕對時間）</span></div>
@@ -671,6 +674,7 @@ function renderStrip(){
   $('rs_txt').textContent=txt;
 }
 ['rs_arr','rs_bw'].forEach(id=>$(id).addEventListener('input',renderStrip));
+$('pin_toggle').addEventListener('change',function(){$('ecg_pin').classList.toggle('pinned',this.checked)});
 document.querySelectorAll('[data-hr]').forEach(b=>b.onclick=()=>{$('e_hr').value=b.dataset.hr;renderEcg();});
 function renderEcg(){
   const hr=+$('e_hr').value, RR=60000/hr;
