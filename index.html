@@ -131,7 +131,7 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
 
   <div class="card" id="p_explain"></div>
   <div class="card">
-    <h2>螺旋插值 Helical Interpolation</h2>
+    <h2>螺旋插值 Helical Interpolation <sup class="cite">[7][8][9]</sup></h2>
     <div class="grid g2">
       <div class="result" style="margin:0">
         <b>英文名稱</b><br>
@@ -148,7 +148,7 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
       <li><b>與 Pitch 的關係</b>：Pitch = 1 時資料剛好銜接；<b>Pitch &gt; 1</b> 時螺旋線之間有間隙，需靠相鄰圈的資料插值補足，速度快、劑量低，但 Z 軸解析度可能下降（切層敏感度曲線 SSP 變寬）；<b>Pitch &lt; 1</b> 時資料重疊，插值可用的資料更多，影像品質較佳，劑量較高。</li>
       <li><b>相關名詞</b>：Slice Sensitivity Profile (SSP，切層敏感度曲線)、Z-filtering、Overscanning（過度掃描）。</li>
     </ul>
-    <div class="note">此段為一般 CT 原理說明，投影片僅寫到「Pitch &gt; 1 資料存在間隙」，未附插值的專屬文獻；Flash 模式的雙源補洞等機型細節因廠牌而異，這裡未列入。如需引用請另補來源。</div>
+    <div class="note"><b>資料來源說明：</b>360° LI / 180° LI 的定義、Pitch 增加使 z 方向間隙與切層剖面變寬、影像品質下降，可對照 [7] Hu 1999（單層螺旋 CT 的分析；多排偵檢器的取樣方式較複雜）。螺旋 CT 的起源與插值概念見 [8][9]。「Pitch &lt; 1 時插值可用資料較多、品質較佳」一句為一般原理推論，[7] 並未分析 Pitch &lt; 1，投影片也只提到重疊與劑量較高。Flash 模式的雙源補洞等機型細節因廠牌而異，未列入。</div>
   </div>
 
   <div class="card"><h2>公式與計算過程 <sup class="cite">[1]</sup></h2><div id="p_calc"></div></div>
@@ -246,15 +246,15 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
   </div>
 
   <div class="card">
-    <h2>EKG 波形隨心率的變化</h2>
+    <h2>EKG 波形隨心率的變化 <sup class="cite">[10][11][12]</sup></h2>
     <div class="stats" id="z_stats"></div>
     <div class="result" id="z_text"></div>
     <div style="overflow-x:auto;margin-top:12px"><table id="z_tbl"></table></div>
-    <div class="note">本 App 的 EKG 為示意模型：PR 間距隨心率縮短（約 100–200 ms）、QRS 固定約 90 ms、QT 依 Bazett 公式 QT = QTc × √RR（秒）計算，QTc 假設為 400 ms；U 波僅在 HR &lt; 60 bpm 時出現；HR 越高，下一個 P 波越靠近前一個 T 波。真實心電圖因人而異，僅供教學。本節文字依使用者提供的整理撰寫，未附文獻出處，如需引用請補充來源。</div>
+    <div class="note">本 App 的 EKG 為示意模型：PR 間距隨心率縮短（約 100–200 ms）、QRS 固定約 90 ms、QT 依 Bazett 公式 QT = QTc × √RR（秒）計算，QTc 假設為 400 ms；U 波僅在 HR &lt; 60 bpm 時出現；HR 越高，下一個 P 波越靠近前一個 T 波。真實心電圖因人而異，僅供教學。<br><b>資料來源說明：</b>本節文字原依使用者提供的整理撰寫。目前能對應到出處的只有：QT 與心率校正（Bazett 公式）見 [10][11]；U 波於心搏過緩與低血鉀較明顯、與 T 波同向、通常使 QT 延長見 [12]（教學網站）。<b>以下敘述我尚未找到可核對的出處，請勿當作已有文獻佐證：</b>PR 間距隨心率縮短的幅度、HR &gt; 150 bpm 時 P–T 重疊、QT 過長誘發 EAD 與 Torsades、呼吸性竇性心律不整與 HRV 的數值、基線漂移的成因。若要在報告或教學中引用，建議查教科書或指引（例如心電圖專書）補上。</div>
   </div>
 
   <div class="card">
-    <h2>連續節律條：HRV、竇性心律不整與基線漂移</h2>
+    <h2>連續節律條：HRV、竇性心律不整與基線漂移 <span class="note" style="margin:0">（教學示意，未附文獻出處，見上方說明）</span></h2>
     <div class="row" style="margin-bottom:8px">
       <label style="display:inline-flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="rs_arr" checked> 呼吸性竇性心律不整 / HRV</label>
       <label style="display:inline-flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="rs_bw"> 基線漂移 / 運動偽影</label>
@@ -393,6 +393,22 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
       <a href="https://doi.org/10.2214/AJR.07.2711" target="_blank" rel="noopener">10.2214/AJR.07.2711</a>；
       <a href="https://ajronline.org/doi/10.2214/AJR.07.2711" target="_blank" rel="noopener">AJR 線上版</a>。
       <br><span style="color:var(--muted)">用於：Table 2，不同心率（50–60、60–70、70–80、&gt;80 bpm）下最佳收縮期 / 舒張期重建視窗起點（median %）。</span></li>
+    <li id="ref7">[7] Hu H. Multi-slice helical CT: scan and reconstruction. <i>Med Phys</i>. 1999 Jan;26(1):5-18. doi:
+      <a href="https://doi.org/10.1118/1.598470" target="_blank" rel="noopener">10.1118/1.598470</a>。
+      <br><span style="color:var(--muted)">用於：螺旋插值（360° LI、180° LI）、Pitch 增加時 z 方向取樣間隙變大、切層剖面（slice profile）變寬、影像品質下降。刊名、卷期與作者由網路上取得的文件確認；DOI 為我依記憶補上，請點連結核對。</span></li>
+    <li id="ref8">[8] Crawford CR, King KF. Computed tomography scanning with simultaneous patient translation. <i>Med Phys</i>. 1990;17(6):967-982.
+      <br><span style="color:var(--muted)">用於：螺旋（helical）CT 以檢查台連續移動掃描、並以插值估算各 z 位置資料的早期原理論文。</span></li>
+    <li id="ref9">[9] Kalender WA, Seissler W, Klotz E, Vock P. Spiral volumetric CT with single-breath-hold technique, continuous transport, and continuous scanner rotation. <i>Radiology</i>. 1990;176(1):181-183.
+      <br><span style="color:var(--muted)">用於：螺旋 CT 的早期臨床原理論文。</span></li>
+    <li id="ref10">[10] Postema PG, Wilde AAM. The measurement of the QT interval. <i>Curr Cardiol Rev</i>. 2014;10(3):287-294. doi:
+      <a href="https://doi.org/10.2174/1573403X10666140514103612" target="_blank" rel="noopener">10.2174/1573403X10666140514103612</a>；
+      <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4040880" target="_blank" rel="noopener">PMC4040880</a>。
+      <br><span style="color:var(--muted)">用於：QT 間距測量與心率校正（QTc）。書目由搜尋結果取得，因網站擋掉自動存取，我未能讀取內文，頁面中對 QT 與心率關係的敘述請以原文為準。</span></li>
+    <li id="ref11">[11] Bazett HC. An analysis of the time-relations of electrocardiograms. <i>Heart</i>. 1920;7:353-370.
+      <br><span style="color:var(--muted)">用於：Bazett 公式 QTc = QT ÷ √RR(秒)，本 App 的 QT 示意模型即以此公式反推。</span></li>
+    <li id="ref12">[12] ECG Book. U Wave（ECGbook.com，Cardiology 區，2024-07-30）。
+      <a href="https://www.ecgbook.com/u-wave/" target="_blank" rel="noopener">ecgbook.com/u-wave</a>。
+      <br><span style="color:var(--muted)">用於：U 波最常見於心搏過緩與低血鉀、U 波與 T 波同向、通常使 QT 延長。網頁無署名作者，屬教學網站而非同儕審查文獻。</span></li>
   </ol>
   <div class="note">本頁為教學輔助工具，數值為簡化模型；臨床掃描協定請以院內規範與製造商手冊為準。</div>
 </div>
