@@ -130,6 +130,27 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
   </div>
 
   <div class="card" id="p_explain"></div>
+  <div class="card">
+    <h2>螺旋插值 Helical Interpolation</h2>
+    <div class="grid g2">
+      <div class="result" style="margin:0">
+        <b>英文名稱</b><br>
+        Helical Interpolation（亦稱 Z-axis Interpolation、Spiral Interpolation）；常見演算法如 360° LI（360° Linear Interpolation）、180° LI（180° Linear Interpolation）。
+      </div>
+      <div class="result" style="margin:0">
+        <b>一句話定義</b><br>
+        螺旋掃描時，用相鄰圈（相鄰旋轉）實際量到的投影資料，以加權方式估算出「目標影像平面」的資料，再重建成影像。
+      </div>
+    </div>
+    <ul style="margin:12px 0 0;padding-left:20px;font-size:.92rem">
+      <li><b>為什麼需要</b>：螺旋掃描時檢查台持續移動，X 光管繞行的軌跡是螺旋線，任何一個 Z 位置的平面，都沒有被「完整一圈」在同一個平面上掃到，所以需要插值補出該平面的資料。</li>
+      <li><b>做法（概念）</b>：取目標平面前後兩側、角度相同的投影資料，依距離遠近加權平均，得到該平面的投影，再做重建。因此可在 Z 軸上任意位置重建影像，包含重疊重建。</li>
+      <li><b>與 Pitch 的關係</b>：Pitch = 1 時資料剛好銜接；<b>Pitch &gt; 1</b> 時螺旋線之間有間隙，需靠相鄰圈的資料插值補足，速度快、劑量低，但 Z 軸解析度可能下降（切層敏感度曲線 SSP 變寬）；<b>Pitch &lt; 1</b> 時資料重疊，插值可用的資料更多，影像品質較佳，劑量較高。</li>
+      <li><b>相關名詞</b>：Slice Sensitivity Profile (SSP，切層敏感度曲線)、Z-filtering、Overscanning（過度掃描）。</li>
+    </ul>
+    <div class="note">此段為一般 CT 原理說明，投影片僅寫到「Pitch &gt; 1 資料存在間隙」，未附插值的專屬文獻；Flash 模式的雙源補洞等機型細節因廠牌而異，這裡未列入。如需引用請另補來源。</div>
+  </div>
+
   <div class="card"><h2>公式與計算過程 <sup class="cite">[1]</sup></h2><div id="p_calc"></div></div>
 </section>
 
@@ -445,12 +466,12 @@ function renderPitch(){
   // explanation
   let html='<h2>解讀</h2><ul style="margin:0;padding-left:20px">';
   html+=`<li><b>Pitch = 1</b>：檢查台移動距離剛好等於偵檢器寬度，資料無縫接合。</li>`;
-  html+=`<li><b>Pitch &gt; 1</b>：檢查台移動較快，資料存在間隙。<br>優點：掃描速度快、輻射劑量較低；缺點：可能犧牲 Z 軸解析度。</li>`;
+  html+=`<li><b>Pitch &gt; 1</b>：檢查台移動較快，資料存在間隙（靠螺旋插值 Helical Interpolation 補足）。<br>優點：掃描速度快、輻射劑量較低；缺點：可能犧牲 Z 軸解析度。</li>`;
   html+=`<li><b>Pitch &lt; 1</b>：資料有重疊（Overscanning）。<br>優點：影像品質較佳，常用於心臟冠狀動脈攝影；缺點：輻射劑量較高。</li>`;
   html+=`</ul>`;
   html+=`<div class="result">目前 Pitch = <b>${p.toFixed(2)}</b>：每轉床移動 ${fmt(feed,1)} mm，偵檢器寬度 ${fmt(coll,1)} mm → `;
   if(Math.abs(p-1)<0.001) html+='資料剛好無縫接合。';
-  else if(p>1) html+=`每轉產生 ${fmt(feed-coll,1)} mm 的間隙（由螺旋插值補足），劑量低、速度快。`;
+  else if(p>1) html+=`每轉產生 ${fmt(feed-coll,1)} mm 的間隙（由螺旋插值 Helical Interpolation 補足，見下方定義），劑量低、速度快。`;
   else html+=`每轉重疊 ${fmt(coll-feed,1)} mm（約 ${fmt((1-p)*100,0)}% 重疊），影像品質佳、劑量較高。`;
   html+=`</div>`;
   $('p_explain').innerHTML=html;
