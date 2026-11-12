@@ -8,10 +8,10 @@
 :root{
   --bg:#f4f6fa; --card:#fff; --ink:#1b2430; --muted:#667085; --line:#dde3ec;
   --brand:#1f5fbf; --brand2:#e8f0fd; --good:#1a9a5b; --warn:#e08a00; --bad:#d33a3a;
-  --ecg-bg:#0b0f14; --ecg:#ffd84a;
+  --ecg-bg:#0b0f14; --ecg:#ffd84a; --dyn:#ffe3c2;
 }
 @media (prefers-color-scheme:dark){
-  :root{--bg:#10151c;--card:#18202a;--ink:#e8edf4;--muted:#9aa7b8;--line:#2a3544;--brand:#6da2f5;--brand2:#1d2c44;}
+  :root{--bg:#10151c;--card:#18202a;--ink:#e8edf4;--muted:#9aa7b8;--line:#2a3544;--brand:#6da2f5;--brand2:#1d2c44;--dyn:#6b4313;}
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
@@ -84,6 +84,8 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
 .tn.leaf.sel{outline:3px solid var(--ink);outline-offset:1px}
 .arr{color:var(--muted)}
 .tbl-note{font-size:.8rem;color:var(--bad);margin-top:6px}
+.dyn{background:var(--dyn);color:var(--ink)}
+span.dyn{padding:1px 6px;border-radius:4px}
 .pin{z-index:20}
 .pin.pinned{position:sticky;top:env(safe-area-inset-top,0px);box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .pin .ecgbox svg{max-height:30vh}
@@ -311,6 +313,7 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
       <span style="color:#e08a00">▍Relative：時間點隨 HR 改變</span><span style="color:#1f7ae0">▍Absolute：時間點固定</span>
     </div>
     <div style="overflow-x:auto;margin-top:10px"><table id="c_tbl"></table></div>
+    <div class="note"><span class="dyn">橘色底色</span>的格子會隨滑桿或心率改變，其餘為固定值（投影片原數值與 60 / 100 bpm 的 R-R 間期）。</div>
     <div class="tbl-note">⚠ 投影片表格中「100 bpm 的 70% R-R interval ≈ 525 ms」與數學計算 70% × 600 ms = 420 ms 不一致（60 bpm 的 700 ms 則吻合）。表中「投影片」欄保留原數值，「計算」欄為純數學換算，建議回原始文獻確認該欄定義。</div>
     <div id="c_calc" style="margin-top:8px"></div>
   </div>
@@ -819,12 +822,12 @@ function renderCmp(){
   $('c_svg').innerHTML=g;
 
   const RRc=60000/hr;
-  let h='<tr><th>項目</th><th>HR 60 bpm</th><th>HR 100 bpm</th><th>目前 HR '+hr+' bpm</th></tr>';
-  h+=`<tr><th style="text-align:left">R-R interval</th><td>1000 ms</td><td>600 ms</td><td>${fmt(RRc,0)} ms</td></tr>`;
+  let h='<tr><th>項目</th><th>HR 60 bpm</th><th>HR 100 bpm</th><th>目前 HR <span class="dyn">'+hr+'</span> bpm</th></tr>';
+  h+=`<tr><th style="text-align:left">R-R interval</th><td>1000 ms</td><td>600 ms</td><td class="dyn">${fmt(RRc,0)} ms</td></tr>`;
   h+=`<tr><th style="text-align:left">Diastole duration（投影片）</th><td style="color:var(--bad)">~665 ms</td><td style="color:var(--bad)">~400 ms</td><td>—</td></tr>`;
   h+=`<tr><th style="text-align:left">70% R-R interval（投影片）</th><td>~700 ms</td><td>~525 ms</td><td>—</td></tr>`;
-  h+=`<tr><th style="text-align:left">Relative ${rp}% → ms（計算）</th><td>${fmt(rp/100*1000,0)} ms</td><td>${fmt(rp/100*600,0)} ms</td><td>${fmt(rp/100*RRc,0)} ms</td></tr>`;
-  h+=`<tr><th style="text-align:left">Absolute ${am} ms → % R-R（計算）</th><td>${fmt(am/1000*100,0)} %</td><td>${fmt(am/600*100,0)} %</td><td>${fmt(am/RRc*100,0)} %</td></tr>`;
+  h+=`<tr><th style="text-align:left">Relative <span class="dyn">${rp}%</span> → ms（計算）</th><td class="dyn">${fmt(rp/100*1000,0)} ms</td><td class="dyn">${fmt(rp/100*600,0)} ms</td><td class="dyn">${fmt(rp/100*RRc,0)} ms</td></tr>`;
+  h+=`<tr><th style="text-align:left">Absolute <span class="dyn">${am} ms</span> → % R-R（計算）</th><td class="dyn">${fmt(am/1000*100,0)} %</td><td class="dyn">${fmt(am/600*100,0)} %</td><td class="dyn">${fmt(am/RRc*100,0)} %</td></tr>`;
   $('c_tbl').innerHTML=h;
 
   let c='';
