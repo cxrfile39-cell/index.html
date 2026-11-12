@@ -71,6 +71,9 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
 .refs ol{padding-left:22px;margin:0}
 .refs li{margin-bottom:10px;font-size:.86rem}
 .refs a{color:var(--brand);word-break:break-all}
+.credit{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.credit img{width:112px;height:auto;max-width:100%;background:#fff;padding:6px;border-radius:8px;flex:none}
+.credit a{color:var(--brand);word-break:break-all}
 .tree{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .tcol{display:flex;flex-direction:column;gap:10px}
 .trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -87,6 +90,7 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
 <header>
   <h1>心臟 CT 互動學習</h1>
   <p>Pitch · Z-axis Coverage · 掃描規格 · ECG Gating · CCTA 掃描模式</p>
+  <p style="margin-top:4px">製作者：JH CHIU MD、claude.ai（設定模型：Claude Sonnet 5.5，<code>claude-sonnet-5-5</code>）</p>
 </header>
 <nav id="tabs">
   <button data-t="t1" class="active">① Pitch 視覺化</button>
@@ -411,6 +415,16 @@ sup.cite{font-size:.65em;color:var(--brand);margin-left:2px}
       <br><span style="color:var(--muted)">用於：U 波最常見於心搏過緩與低血鉀、U 波與 T 波同向、通常使 QT 延長。網頁無署名作者，屬教學網站而非同儕審查文獻。</span></li>
   </ol>
   <div class="note">本頁為教學輔助工具，數值為簡化模型；臨床掃描協定請以院內規範與製造商手冊為準。</div>
+</div>
+<div class="card credit">
+  <img alt="使用心得回饋表單 QR code" src="data:image/png;base64,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">
+  <div style="min-width:0">
+    <b>製作者：JH CHIU MD、claude.ai</b><br>
+    製作模型：Claude Sonnet 5.5（設定識別碼 <code>claude-sonnet-5-5</code>；實際回應的模型可能因工作階段切換而不同）<br>
+    歡迎回饋使用心得：<br>
+    <a href="https://forms.gle/X1eCzwPHV3DuVGYW7" target="_blank" rel="noopener">https://forms.gle/X1eCzwPHV3DuVGYW7</a>
+    <div class="note">也可掃描左側 QR code 開啟表單（離線使用時需連網才能填寫）。</div>
+  </div>
 </div>
 </main>
 
